@@ -1,17 +1,15 @@
-// File: src/pc/controller/controller_wii.c
+/* Variables */
+#include <ogc/wpad.h>
 
-#include <ogcsys.h>
+bool exit_to_menu = false; // Declare global variable for exit to menu
 
-// Global variable to signal exit to Wii menu
-int exitToMenu = 0;
-
-void controller_wii_read() {
-    // Existing code...
-
-    // Check if HOME button is pressed
-    if (PAD_ButtonsDown(0) & PAD_BUTTON_HOME) {
-        exitToMenu = 1; // Signal to exit to Wii menu
+void controller_wii_get_held(struct controller_data *data) {
+    WPAD_ScanPads();  // Scanning for button presses
+    
+    // Check for HOME button
+    if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_HOME) {
+        exit_to_menu = true;  // Set flag when HOME is pressed
     }
 
-    // Existing code...
+    // (Rest of the original code here...) 
 }
