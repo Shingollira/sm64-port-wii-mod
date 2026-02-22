@@ -20,6 +20,8 @@
 #include "../configfile.h"
 #include <ogcsys.h>
 
+#include <gccore.h>
+
 static int nunchuk_center_x = 0;
 static int nunchuk_center_y = 0;
 static bool nunchuk_calibrated = false;
@@ -32,6 +34,7 @@ static uint32_t controller_wii_get_held(void)
 
 static void controller_wii_init(void)
 {
+    PAD_Init();
     WPAD_Init();
     WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
     WPAD_SetVRes(WPAD_CHAN_0, 640, 480);
@@ -39,6 +42,29 @@ static void controller_wii_init(void)
 
 static void controller_wii_read(OSContPad *pad)
 {
+    PAD_ScanPads();
+u16 gcHeld = PAD_ButtonsHeld(0);
+
+// Si hay GC conectado (Dolphin siempre lo detecta si está activo)
+if (gcHeld)
+{
+    if (gcHeld & PAD_BUTTON_A) pad->button |= A_BUTTON;
+    if (gcHeld & PAD_BUTTON_B) pad->button |= B_BUTTON;
+    if (gcHeld & PAD_BUTTON_START) pad->button |= START_BUTTON;
+    if (gcHeld & PAD_BUTTON_Z) pad->button |= Z_TRIG;
+    if (gcHeld & PAD_BUTTON_R) pad->button |= R_TRIG;
+    if (gcHeld & PAD_BUTTON_L) pad->button |= L_TRIG;
+
+    if (gcHeld & PAD_BUTTON_UP) pad->button |= U_CBUTTONS;
+    if (gcHeld & PAD_BUTTON_DOWN) pad->button |= D_CBUTTONS;
+    if (gcHeld & PAD_BUTTON_LEFT) pad->button |= L_CBUTTONS;
+    if (gcHeld & PAD_BUTTON_RIGHT) pad->button |= R_CBUTTONS;
+
+    pad->stick_x = PAD_StickX(0);
+    pad->stick_y = PAD_StickY(0);
+
+    return; // prioridad al GC
+}
     WPAD_ScanPads();
 
     uint32_t held = WPAD_ButtonsHeld(0);
@@ -55,14 +81,6 @@ static void controller_wii_read(OSContPad *pad)
         exit_hold_timer = 0;
     }
 
-    /* ========== 1 + 2 = exit largo ========= */
-
-    if ((held & WPAD_BUTTON_1) && (held & WPAD_BUTTON_2)) {
-        exit_hold_timer++;
-        if (exit_hold_timer > 300) {
-            SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
-        }
-    }
 
     struct expansion_t data;
     WPAD_Expansion(WPAD_CHAN_0, &data);
